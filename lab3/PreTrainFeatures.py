@@ -87,10 +87,6 @@ print('test_loss: ', test_loss)
 
 #Y_pred = model.predict(test_features)
 #y_pred = np.argmax(Y_pred, axis=1)
-#print(confusion_matrix(test_generator.classes, y_pred))
-
-Y_pred = model.predict(test_features)
-y_pred = np.argmax(Y_pred, axis=1)
-print(y_pred);
-print('Confusion Matrix')
+#print(y_pred);
+#print('Confusion Matrix')
 #print(confusion_matrix(test_labels, y_pred))
