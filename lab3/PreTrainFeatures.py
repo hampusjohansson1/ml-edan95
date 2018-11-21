@@ -85,8 +85,9 @@ test_loss, test_acc = model.evaluate(x=test_features,y=test_labels)
 print('test acc: ', test_acc)
 print('test_loss: ', test_loss)
 
-#Y_pred = model.predict(test_features)
-#y_pred = np.argmax(Y_pred, axis=1)
-#print(y_pred);
-#print('Confusion Matrix')
-#print(confusion_matrix(test_labels, y_pred))
+y_pred = model.predict(test_features)
+test_labels = np.argmax(test_labels, axis=1)
+y_pred = np.argmax(y_pred, axis=1)
+
+cm = confusion_matrix(test_labels, y_pred)
+print(cm)
