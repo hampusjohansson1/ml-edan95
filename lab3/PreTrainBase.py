@@ -30,6 +30,8 @@ load=False
 train_datagen = ImageDataGenerator(
     rescale=1./255,
     rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
     shear_range=0.2,
     zoom_range=0.2,
     horizontal_flip=True,
@@ -47,7 +49,7 @@ train_generator = train_datagen.flow_from_directory(
 validation_generator = validate_datagen.flow_from_directory(
     validation_dir,
     target_size=(150, 150),
-    batch_size=20,
+    batch_size=15,
     class_mode='categorical')
 
 def generateModel():
@@ -69,7 +71,7 @@ def generateModel():
         steps_per_epoch=90,
         epochs=3,
         validation_data=validation_generator,
-        validation_steps=50)
+        validation_steps=100)
 
     model.save('./pretrained2.h5')
 
