@@ -1,5 +1,5 @@
 from keras.applications import InceptionV3
-from keras.applications.inception_v3 import decode_predictions
+from keras.models import load_model
 import os
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
@@ -18,8 +18,10 @@ train_dir = os.path.join(base_dir, 'train')
 validation_dir = os.path.join(base_dir, 'validation')
 test_dir = os.path.join(base_dir, 'test')
 
-datagen = ImageDataGenerator(rescale=1./255,preprocessing_function=preprocess_input)
+train_datagen = ImageDataGenerator(rescale=1./255,preprocessing_function=preprocess_input)
 test_datagen = ImageDataGenerator(rescale=1./255)
+
+load=True
 
 batch_size = 20
 
@@ -27,7 +29,7 @@ def extract_features(directory, count):
     features = np.zeros(shape=(count, 3, 3, 2048))
     labels = np.zeros(shape=(count,5))
 
-    generator = datagen.flow_from_directory(
+    generator = train_datagen.flow_from_directory(
             directory,
             target_size=(150, 150),
             batch_size=batch_size,
@@ -44,39 +46,51 @@ def extract_features(directory, count):
             break
     return features, labels
 
-#Extract features for training and validation
-train_features, train_labels = extract_features(train_dir, 3640)
-validation_features, validation_labels = extract_features(validation_dir, 1540)
+def generateModel():
 
-train_features = np.reshape(train_features, (3640, 3*3*2048))
-validation_features = np.reshape(validation_features, (1540, 3*3*2048))
+    #Extract features for training and validation
+    train_features, train_labels = extract_features(train_dir, 3640)
+    validation_features, validation_labels = extract_features(validation_dir, 1540)
 
-#Create a dense model
-model = models.Sequential()
-model.add(layers.Dense(256, activation='relu', input_dim=3*3*2048))
-model.add(layers.Dense(5, activation='softmax'))
-model.compile(optimizer="nadam",
-loss='categorical_crossentropy',
-metrics=['acc'])
+    train_features = np.reshape(train_features, (3640, 3*3*2048))
+    validation_features = np.reshape(validation_features, (1540, 3*3*2048))
 
-#Run the training
-history = model.fit(train_features, train_labels,
-epochs=5,
-batch_size=20,
-validation_data=(validation_features, validation_labels))
+    #Create a dense model
+    model = models.Sequential()
+    model.add(layers.Dense(256, activation='relu', input_dim=3*3*2048))
+    model.add(layers.Dense(5, activation='softmax'))
+    model.compile(optimizer="nadam",
+    loss='categorical_crossentropy',
+    metrics=['acc'])
 
-#Test the network
-test_generator = test_datagen.flow_from_directory(
-    test_dir,
-    target_size=(150, 150),
+    #Run the training
+    history = model.fit(train_features, train_labels,
+    epochs=10,
     batch_size=20,
-    class_mode='categorical')
+    validation_data=(validation_features, validation_labels))
 
-test_loss, test_acc = model.evaluate_generator(test_generator, steps=50,input_shape=(150, 150, 3))
+    model.save('./pretrained.h5')
+
+    return model
+
+if load:
+    model = load_model('./pretrained.h5')
+else:
+    model = generateModel()
+
+test_features, test_labels = extract_features(test_dir, 1540)
+test_features = np.reshape(test_features, (1540, 3*3*2048))
+
+test_loss, test_acc = model.evaluate(x=test_features,y=test_labels)
 print('test acc: ', test_acc)
 print('test_loss: ', test_loss)
 
-Y_pred = model.predict_generator(test_generator, steps=50,input_shape=(150, 150, 3))
+#Y_pred = model.predict(test_features)
+#y_pred = np.argmax(Y_pred, axis=1)
+#print(confusion_matrix(test_generator.classes, y_pred))
+
+Y_pred = model.predict(test_features)
 y_pred = np.argmax(Y_pred, axis=1)
+print(y_pred);
 print('Confusion Matrix')
-print(confusion_matrix(test_generator.classes, y_pred))
+#print(confusion_matrix(test_labels, y_pred))
